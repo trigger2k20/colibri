@@ -26,7 +26,7 @@ src = replace_once(
 src = replace_once(
     src,
     '    int rows, columns, gs;\n    void *vk;                             /* ColiVkTensor*, caricata alla prima uso */\n} Mat;\n',
-    '    int rows, columns, gs;\n    int resident;                         /* eligible for persistent accelerator wrapping */\n    void *metal;                          /* ColiMetalTensor*, created lazily */\n    void *vk;                             /* ColiVkTensor*, caricata alla prima uso */\n} Mat;\n',
+    '    int rows, columns, gs;\n    void *vk;                             /* ColiVkTensor*, caricata alla prima uso */\n    int resident;                         /* eligible for persistent accelerator wrapping */\n    void *metal;                          /* ColiMetalTensor*, created lazily */\n} Mat;\n',
     "Mat accelerator fields",
 )
 
@@ -39,8 +39,8 @@ src = replace_once(
 
 src = replace_once(
     src,
-    '        mat.fmt = 4; mat.q4 = packed; mat.s = step; mat.gs = 64;\n        return mat;\n',
-    '        mat.fmt = 4; mat.q4 = packed; mat.s = step; mat.gs = 64; mat.resident = 1;\n        return mat;\n',
+    '        st_read_raw(&m->S, name, packed, 1);\n        st_read_f32_cap(&m->S, scales, step, qs->numel, 1);\n        mat.fmt = 4; mat.q4 = packed; mat.s = step; mat.gs = 64;\n        return mat;\n',
+    '        st_read_raw(&m->S, name, packed, 1);\n        st_read_f32_cap(&m->S, scales, step, qs->numel, 1);\n        mat.fmt = 4; mat.q4 = packed; mat.s = step; mat.gs = 64; mat.resident = 1;\n        return mat;\n',
     "load_mat int4 resident flag",
 )
 
@@ -51,7 +51,7 @@ src = replace_once(src, old_mv, new_mv, "mv Metal dispatch")
 src = replace_once(
     src,
     '    vision_load(m);\n#ifdef COLI_VULKAN\n',
-    '    vision_load(m);\n#ifdef COLI_METAL\n    /* Metal is runtime opt-in.  Failure is non-fatal: the existing CPU path\n     * remains authoritative and streamed routed experts are deliberately\n     * excluded from this first integration step. */\n    if (getenv("COLI_METAL") && atoi(getenv("COLI_METAL"))) {\n        g_metal_ready = coli_metal_init() && coli_metal_available();\n        fprintf(stderr, g_metal_ready\n                ? "Metal: attivo sulle matrici residenti\\n"\n                : "Metal: nessun device utilizzabile, resto su CPU\\n");\n    }\n#endif\n#ifdef COLI_VULKAN\n',
+    '    vision_load(m);\n#ifdef COLI_METAL\n    /* Metal is runtime opt-in. Failure is non-fatal: the existing CPU path\n     * remains authoritative and streamed routed experts are deliberately\n     * excluded from this first integration step. */\n    if (getenv("COLI_METAL") && atoi(getenv("COLI_METAL"))) {\n        g_metal_ready = coli_metal_init() && coli_metal_available();\n        fprintf(stderr, g_metal_ready\n                ? "Metal: attivo sulle matrici residenti\\n"\n                : "Metal: nessun device utilizzabile, resto su CPU\\n");\n    }\n#endif\n#ifdef COLI_VULKAN\n',
     "Metal initialization",
 )
 
